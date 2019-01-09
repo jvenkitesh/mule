@@ -7,6 +7,7 @@
 package org.mule.module.oauth2.internal.clientcredentials;
 
 import static org.mule.config.i18n.MessageFactory.createStaticMessage;
+import static org.mule.module.oauth2.internal.authorizationcode.state.ResourceOwnerOAuthContext.DEFAULT_RESOURCE_OWNER_ID;
 
 import org.mule.api.MuleContext;
 import org.mule.api.MuleEvent;
@@ -20,7 +21,6 @@ import org.mule.module.http.api.HttpHeaders;
 import org.mule.module.http.internal.domain.request.HttpRequestBuilder;
 import org.mule.module.oauth2.api.RequestAuthenticationException;
 import org.mule.module.oauth2.internal.AbstractGrantType;
-import org.mule.module.oauth2.internal.authorizationcode.state.ResourceOwnerOAuthContext;
 import org.mule.module.oauth2.internal.tokenmanager.TokenManagerConfig;
 
 /**
@@ -81,7 +81,8 @@ public class ClientCredentialsGrantType extends AbstractGrantType implements Ini
     @Override
     public void authenticate(MuleEvent muleEvent, HttpRequestBuilder builder) throws MuleException
     {
-        final String accessToken = tokenManagerConfig.getConfigOAuthContext().getContextForResourceOwner(ResourceOwnerOAuthContext.DEFAULT_RESOURCE_OWNER_ID).getAccessToken();
+        final String accessToken = tokenManagerConfig.getConfigOAuthContext().getContextForResourceOwner(DEFAULT_RESOURCE_OWNER_ID).getAccessToken();
+
         if (accessToken == null)
         {
             throw new RequestAuthenticationException(createStaticMessage(String.format("No access token found. Verify that you have authenticated before trying to execute an operation to the API.")));
