@@ -14,11 +14,8 @@ import static java.lang.String.format;
 import static org.apache.commons.lang.StringUtils.EMPTY;
 import static org.hamcrest.core.Is.isA;
 import static org.mule.tck.MuleTestUtils.testWithSystemProperty;
-
-import java.io.IOException;
-
-import org.mule.api.DefaultMuleException;
-import org.mule.api.MessagingException;
+import org.mule.api.MuleContext;
+import org.mule.construct.Flow;
 import org.mule.module.oauth2.internal.TokenNotFoundException;
 import org.mule.tck.MuleTestUtils;
 import org.mule.tck.junit4.AbstractMuleTestCase;
@@ -27,6 +24,8 @@ import org.mule.tck.junit4.rule.DynamicPort;
 import org.mule.tck.junit4.rule.SystemProperty;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+
+import java.io.IOException;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -58,8 +57,17 @@ public class ClientCredentialsFailureTestCase extends AbstractMuleTestCase
             public void run() throws Exception
             {
                 ApplicationContextBuilder applicationContextBuilder = new ApplicationContextBuilder().setApplicationResources(new String[] {"client-credentials/client-credentials-minimal-config.xml"});
-                expectedException.expectCause(isA(IOException.class));
-                applicationContextBuilder.build();
+                MuleContext muleContext = applicationContextBuilder.build();
+                
+                try
+                {
+                    expectedException.expectCause(isA(IOException.class));
+                    ((Flow)(muleContext.getRegistry().lookupFlowConstruct("testFlow"))).process(MuleTestUtils.getTestEvent("", muleContext));
+                }
+                finally
+                {
+                    muleContext.dispose();
+                }
             }
         });
     }

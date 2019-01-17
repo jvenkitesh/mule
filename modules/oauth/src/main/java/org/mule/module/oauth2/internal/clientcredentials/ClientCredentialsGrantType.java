@@ -14,6 +14,7 @@ import org.mule.api.MuleEvent;
 import org.mule.api.MuleException;
 import org.mule.api.MuleRuntimeException;
 import org.mule.api.context.MuleContextAware;
+import org.mule.api.lifecycle.Disposable;
 import org.mule.api.lifecycle.Initialisable;
 import org.mule.api.lifecycle.InitialisationException;
 import org.mule.api.lifecycle.Startable;
@@ -26,7 +27,7 @@ import org.mule.module.oauth2.internal.tokenmanager.TokenManagerConfig;
 /**
  * Authorization element for client credentials oauth grant type
  */
-public class ClientCredentialsGrantType extends AbstractGrantType implements Initialisable, Startable, MuleContextAware
+public class ClientCredentialsGrantType extends AbstractGrantType implements Initialisable, Disposable, Startable, MuleContextAware
 {
 
     private ClientCredentialsTokenRequestHandler tokenRequestHandler;
@@ -40,7 +41,14 @@ public class ClientCredentialsGrantType extends AbstractGrantType implements Ini
     @Override
     public void start() throws MuleException
     {
-        tokenRequestHandler.refreshAccessToken();
+        try {
+            tokenRequestHandler.refreshAccessToken();
+        }
+        catch (MuleException e)
+        {
+            tokenRequestHandler.dispose();
+            throw e;
+        }
     }
 
     @Override
@@ -62,6 +70,12 @@ public class ClientCredentialsGrantType extends AbstractGrantType implements Ini
         }
     }
 
+    @Override
+    public void dispose()
+    {
+        tokenRequestHandler.dispose();
+    }
+    
     @Override
     public void setMuleContext(final MuleContext context)
     {

@@ -13,6 +13,7 @@ import org.mule.api.DefaultMuleException;
 import org.mule.api.MuleContext;
 import org.mule.api.MuleEvent;
 import org.mule.api.MuleException;
+import org.mule.api.lifecycle.Disposable;
 import org.mule.construct.Flow;
 import org.mule.module.http.api.HttpHeaders;
 import org.mule.module.oauth2.internal.AbstractTokenRequestHandler;
@@ -34,7 +35,8 @@ import org.apache.commons.codec.binary.Base64;
 /**
  * Handler for calling the token url, parsing the response and storing the oauth context data.
  */
-public class ClientCredentialsTokenRequestHandler extends AbstractTokenRequestHandler
+
+public class ClientCredentialsTokenRequestHandler extends AbstractTokenRequestHandler implements Disposable
 {
 
     private String scopes;
