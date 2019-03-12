@@ -13,7 +13,6 @@ import static java.util.Collections.singletonMap;
 import static java.util.Optional.of;
 import static org.mule.runtime.core.internal.event.EventQuickCopy.quickCopy;
 import static org.mule.runtime.core.privileged.processor.MessageProcessors.newChildContext;
-
 import org.mule.runtime.api.component.location.ComponentLocation;
 import org.mule.runtime.api.lifecycle.Disposable;
 import org.mule.runtime.core.api.event.CoreEvent;
@@ -26,8 +25,6 @@ import org.mule.runtime.core.internal.rx.FluxSinkRecorder;
 import org.mule.runtime.core.internal.util.rx.RoundRobinFluxSinkSupplier;
 import org.mule.runtime.core.privileged.event.BaseEventContext;
 
-import org.reactivestreams.Publisher;
-
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 
@@ -37,6 +34,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -141,7 +139,7 @@ public class CompositeOperationPolicy
 
           OperationExecutionFunction operationExecutionFunction =
               ((InternalEvent) event).getInternalParameter(POLICY_OPERATION_OPERATION_EXEC_FUNCTION);
-          return operationExecutionFunction.execute(parametersMap, event);
+          return Mono.<CoreEvent>create(sink -> operationExecutionFunction.execute(parametersMap, event, sink));
         })
         .map(response -> quickCopy(response, singletonMap(POLICY_OPERATION_NEXT_OPERATION_RESPONSE, response)));
   }
@@ -161,14 +159,17 @@ public class CompositeOperationPolicy
   }
 
   @Override
-  public Publisher<CoreEvent> process(CoreEvent operationEvent, OperationExecutionFunction operationExecutionFunction,
-                                      OperationParametersProcessor parametersProcessor, ComponentLocation operationLocation) {
-    return Mono.create(callerSink -> {
-      FluxSink<CoreEvent> policySink = policySinks.get(operationLocation.getLocation()).get();
-      policySink.next(operationEventForPolicy(quickCopy(newChildContext(operationEvent, of(operationLocation)), operationEvent),
-                                              operationExecutionFunction,
-                                              parametersProcessor, callerSink));
-    });
+  public void process(CoreEvent operationEvent,
+                      OperationExecutionFunction operationExecutionFunction,
+                      OperationParametersProcessor parametersProcessor,
+                      ComponentLocation operationLocation,
+                      MonoSink<CoreEvent> sink) {
+
+    FluxSink<CoreEvent> policySink = policySinks.get(operationLocation.getLocation()).get();
+
+    policySink.next(operationEventForPolicy(quickCopy(newChildContext(operationEvent, of(operationLocation)), operationEvent),
+                                            operationExecutionFunction,
+                                            parametersProcessor, sink));
   }
 
   private CoreEvent operationEventForPolicy(CoreEvent operationEvent, OperationExecutionFunction operationExecutionFunction,
