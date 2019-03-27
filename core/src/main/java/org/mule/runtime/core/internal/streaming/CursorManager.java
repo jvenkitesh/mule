@@ -25,12 +25,17 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Keeps track of active {@link Cursor cursors} and their {@link CursorProvider providers}
  *
  * @since 4.0
  */
 public class CursorManager {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(CursorManager.class);
 
   private final LoadingCache<BaseEventContext, EventStreamingState> registry =
       Caffeine.newBuilder()
@@ -62,6 +67,7 @@ public class CursorManager {
    * @return a {@link CursorProvider}
    */
   public CursorProvider manage(CursorProvider provider, BaseEventContext ownerContext) {
+    LOGGER.debug("Managing stream for {}", ownerContext);
     ManagedCursorProvider managedProvider;
     if (provider instanceof CursorStreamProvider) {
       managedProvider = new ManagedCursorStreamProvider(provider, statistics);
@@ -77,10 +83,12 @@ public class CursorManager {
   }
 
   private void terminated(BaseEventContext context) {
+    LOGGER.debug("Terminated stream for {}", context);
     registry.invalidate(context);
   }
 
   private void hookEventTermination(BaseEventContext ownerContext) {
+    LOGGER.debug("Hooking stream termination for {}", ownerContext);
     ownerContext.onTerminated((response, throwable) -> terminated(ownerContext));
   }
 
