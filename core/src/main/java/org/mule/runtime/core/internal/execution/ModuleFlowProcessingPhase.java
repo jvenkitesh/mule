@@ -30,7 +30,6 @@ import static reactor.core.publisher.Mono.error;
 import static reactor.core.publisher.Mono.from;
 import static reactor.core.publisher.Mono.just;
 import static reactor.core.publisher.Mono.when;
-
 import org.mule.runtime.api.component.Component;
 import org.mule.runtime.api.component.location.ComponentLocation;
 import org.mule.runtime.api.component.location.ConfigurationComponentLocator;
@@ -67,8 +66,6 @@ import org.mule.runtime.core.privileged.execution.MessageProcessContext;
 import org.mule.runtime.core.privileged.execution.MessageProcessTemplate;
 import org.mule.runtime.extension.api.runtime.operation.Result;
 
-import org.reactivestreams.Publisher;
-
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -81,6 +78,9 @@ import java.util.function.Function;
 import javax.inject.Inject;
 import javax.xml.namespace.QName;
 
+import org.reactivestreams.Publisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -93,6 +93,9 @@ import reactor.core.publisher.Mono;
  */
 public class ModuleFlowProcessingPhase
     extends NotificationFiringProcessingPhase<ModuleFlowProcessingPhaseTemplate> implements Initialisable {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ModuleFlowProcessingPhase.class);
+  private static final String PREFIX = "<<<<ANITA>>>> ->";
 
   private ErrorType sourceResponseGenerateErrorType;
   private ErrorType sourceResponseSendErrorType;
@@ -211,11 +214,19 @@ public class ModuleFlowProcessingPhase
         }
 
         return from(sendResponseToClient.apply(successResult))
-            .doOnSuccess(v -> onTerminate(flowConstruct, messageSource, ctx.terminateConsumer,
-                                          right(successResult.getResult())))
-            .onErrorResume(e -> policySuccessError(new SourceErrorException(successResult.getResult(),
-                                                                            sourceResponseSendErrorType, e),
-                                                   successResult, ctx, flowConstruct, messageSource));
+            .doOnSuccess(v -> {
+              LOGGER.debug("{} response sent for {}", PREFIX, right(successResult.getResult().getContext().getId()));
+              onTerminate(flowConstruct, messageSource, ctx.terminateConsumer,
+                          right(successResult.getResult()));
+            })
+            .onErrorResume(e -> {
+              LOGGER.debug("{} response failed for {}", PREFIX, right(successResult.getResult().getContext().getId()));
+              onTerminate(flowConstruct, messageSource, ctx.terminateConsumer,
+                          right(successResult.getResult()));
+              return policySuccessError(new SourceErrorException(successResult.getResult(),
+                                                          sourceResponseSendErrorType, e),
+                                 successResult, ctx, flowConstruct, messageSource);
+            });
       } catch (Exception e) {
         return policySuccessError(new SourceErrorException(successResult.getResult(), sourceResponseGenerateErrorType, e),
                                   successResult, ctx, flowConstruct, messageSource);

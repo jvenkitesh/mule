@@ -36,10 +36,14 @@ import org.slf4j.LoggerFactory;
 public class CursorManager {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CursorManager.class);
+  private static final String PREFIX = "<<<<ANITA>>>> ->";
 
   private final LoadingCache<BaseEventContext, EventStreamingState> registry =
       Caffeine.newBuilder()
-          .removalListener((context, state, cause) -> ((EventStreamingState) state).dispose())
+          .removalListener((context, state, cause) -> {
+            LOGGER.debug("{} disposing context '{}'", PREFIX, context);
+            ((EventStreamingState) state).dispose();
+          })
           .build(context -> {
             hookEventTermination(context);
             return new EventStreamingState();
@@ -67,7 +71,7 @@ public class CursorManager {
    * @return a {@link CursorProvider}
    */
   public CursorProvider manage(CursorProvider provider, BaseEventContext ownerContext) {
-    LOGGER.debug("Managing stream for {}", ownerContext);
+    LOGGER.debug("{} Managing stream for provider '{}' on context ", PREFIX, ownerContext);
     ManagedCursorProvider managedProvider;
     if (provider instanceof CursorStreamProvider) {
       managedProvider = new ManagedCursorStreamProvider(provider, statistics);
@@ -83,12 +87,12 @@ public class CursorManager {
   }
 
   private void terminated(BaseEventContext context) {
-    LOGGER.debug("Terminated stream for {}", context);
+    LOGGER.debug("{} Terminated stream for context '{}'", PREFIX, context);
     registry.invalidate(context);
   }
 
   private void hookEventTermination(BaseEventContext ownerContext) {
-    LOGGER.debug("Hooking stream termination for {}", ownerContext);
+    LOGGER.debug("{} Hooking stream termination for context '{}'", PREFIX, ownerContext);
     ownerContext.onTerminated((response, throwable) -> terminated(ownerContext));
   }
 
