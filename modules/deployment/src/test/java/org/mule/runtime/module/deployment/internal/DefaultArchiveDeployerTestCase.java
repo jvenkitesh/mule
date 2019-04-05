@@ -13,6 +13,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mule.runtime.container.api.MuleFoldersUtil.getAppDataFolder;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
+
 import org.mule.runtime.deployment.model.api.application.Application;
 import org.mule.runtime.deployment.model.api.application.ApplicationDescriptor;
 import org.mule.runtime.module.deployment.api.DeploymentListener;
@@ -20,9 +21,8 @@ import org.mule.runtime.module.deployment.impl.internal.artifact.AbstractDeploya
 import org.mule.runtime.module.deployment.internal.util.ObservableList;
 import org.mule.tck.junit4.AbstractMuleTestCase;
 
-import java.io.IOException;
-
 import org.apache.commons.io.FileUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Matchers;
@@ -31,6 +31,9 @@ import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import java.io.IOException;
+
+@Ignore("MULE-16671")
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({FileUtils.class})
 @PowerMockIgnore("javax.management.*")
